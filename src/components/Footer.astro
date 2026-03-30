@@ -11,75 +11,120 @@ let contactos = {
 	Texto_Direitos_Rodape: "",
 };
 
-// 3. Vamos ao Strapi buscar os dados reais criados por ti
+// 3. Vamos ao Strapi buscar os dados reais
 try {
 	const resposta = await fetch(`${STRAPI_URL}/api/configuracao-geral`);
-
 	if (resposta.ok) {
 		const json = await resposta.json();
-
 		if (json.data) {
-			// Atualizamos as variáveis com os dados do Strapi (suporta v4 e v5)
 			const attrs = json.data.attributes || json.data;
-
-			// Só substituímos se o cliente tiver preenchido o campo no Strapi
-			if (attrs.Numero_Telemovel)
-				contactos.Numero_Telemovel = attrs.Numero_Telemovel;
+			if (attrs.Numero_Telemovel) contactos.Numero_Telemovel = attrs.Numero_Telemovel;
 			if (attrs.Morada) contactos.Morada = attrs.Morada;
-			if (attrs.Link_Rede_Social)
-				contactos.Link_Rede_Social = attrs.Link_Rede_Social;
-			if (attrs.Link_GPS_Mapa)
-				contactos.Link_GPS_Mapa = attrs.Link_GPS_Mapa;
-			if (attrs.Texto_Direitos_Rodape)
-				contactos.Texto_Direitos_Rodape = attrs.Texto_Direitos_Rodape;
+			if (attrs.Link_Rede_Social) contactos.Link_Rede_Social = attrs.Link_Rede_Social;
+			if (attrs.Link_GPS_Mapa) contactos.Link_GPS_Mapa = attrs.Link_GPS_Mapa;
+			if (attrs.Texto_Direitos_Rodape) contactos.Texto_Direitos_Rodape = attrs.Texto_Direitos_Rodape;
 		}
 	}
 } catch (erro) {
-	console.error(
-		"Aviso: Não foi possível ligar ao Strapi para carregar o Footer.",
-		erro,
-	);
+	console.error("Erro no Footer:", erro);
 }
 ---
 
-<footer>
-	<div class="footer-logo">
-		Chocolate <span>&</span> Canela
-		<span class="gourmet-text">Gourmet</span>
+<footer id="contacto">
+	<div class="footer-cta">
+		<span class="cta-label">Fale Connosco</span>
+		<h2 class="cta-title">Entre em contacto</h2>
+		{contactos.Numero_Telemovel && (
+			<span class="cta-phone">
+				{contactos.Numero_Telemovel}
+			</span>
+		)}
 	</div>
 
-	<div class="footer-sub">{contactos.Morada}</div>
+	<div class="footer-main">
+		<div class="footer-logo">
+			Chocolate <span>&</span> Canela
+			<span class="gourmet-text">Gourmet</span>
+		</div>
 
-	<div class="footer-links">
-		<a href={`tel:${contactos.Numero_Telemovel.replace(/\s+/g, "")}`}
-			>{contactos.Numero_Telemovel}</a
-		>
+		<div class="footer-sub">{contactos.Morada}</div>
 
-		<a
-			href={contactos.Link_Rede_Social}
-			target="_blank"
-			rel="noopener noreferrer">Facebook</a
-		>
+		<div class="footer-links">
+			{contactos.Link_Rede_Social && (
+				<a href={contactos.Link_Rede_Social} target="_blank" rel="noopener noreferrer">
+					Redes Sociais
+				</a>
+			)}
 
-		<a
-			href={contactos.Link_GPS_Mapa}
-			target="_blank"
-			rel="noopener noreferrer">Localização</a
-		>
+			{contactos.Link_GPS_Mapa && (
+				<a href={contactos.Link_GPS_Mapa} target="_blank" rel="noopener noreferrer">
+					Localização
+				</a>
+			)}
+
+			<a href="/politica-privacidade">Política de Privacidade</a>
+
+			<a href="https://www.livroreclamacoes.pt" target="_blank" rel="noopener noreferrer">
+				Livro Reclamações
+			</a>
+		</div>
+
+		{contactos.Texto_Direitos_Rodape && (
+			<div class="footer-copy">{contactos.Texto_Direitos_Rodape}</div>
+		)}
 	</div>
-
-	<div class="footer-copy">{contactos.Texto_Direitos_Rodape}</div>
 </footer>
 
 <style>
-	/* Estilos exatos do design original */
 	footer {
 		background: var(--choc);
-		padding: 3rem 2rem;
+		padding: 6rem 2rem 4rem;
 		text-align: center;
-		border-top: 1px solid rgba(192, 125, 62, 0.2);
+		border-top: 1px solid rgba(192, 125, 62, 0.15);
+		position: relative;
+		overflow: hidden;
 	}
 
+	/* ───── CTA SECTION ───── */
+	.footer-cta {
+		margin-bottom: 5rem;
+		animation: fadeIn 1s ease both;
+	}
+	.cta-label {
+		display: block;
+		font-family: 'Lato', sans-serif;
+		font-size: 0.7rem;
+		letter-spacing: 0.5em;
+		text-transform: uppercase;
+		color: var(--canela);
+		margin-bottom: 1.5rem;
+	}
+	.cta-title {
+		font-family: 'Cormorant Garamond', serif;
+		font-size: clamp(2.2rem, 5vw, 4rem);
+		font-weight: 300;
+		color: var(--cream);
+		margin-bottom: 1rem;
+		font-style: italic;
+	}
+	.cta-phone {
+		font-family: 'Cinzel', serif;
+		font-size: clamp(1.8rem, 4vw, 3rem);
+		color: var(--canela-light);
+		text-decoration: none;
+		transition: all 0.4s ease;
+		display: inline-block;
+	}
+	.cta-phone:hover {
+		color: var(--cream);
+		transform: scale(1.05);
+	}
+
+	/* ───── MAIN FOOTER ───── */
+	.footer-main {
+		border-top: 1px solid rgba(247, 240, 230, 0.05);
+		padding-top: 4rem;
+	}
 	.footer-logo {
 		font-family: "Cinzel", serif;
 		font-size: 1.1rem;
@@ -87,15 +132,8 @@ try {
 		letter-spacing: 0.15em;
 		margin-bottom: 0.4rem;
 	}
-
-	.footer-logo span {
-		color: var(--canela);
-	}
-	.footer-logo .gourmet-text {
-		color: rgba(247, 240, 230, 0.4);
-		font-size: 0.7rem;
-		letter-spacing: 0.1em;
-	}
+	.footer-logo span { color: var(--canela); }
+	.footer-logo .gourmet-text { color: rgba(247, 240, 230, 0.4); font-size: 0.7rem; letter-spacing: 0.1em; }
 
 	.footer-sub {
 		font-family: "Lato", sans-serif;
@@ -104,17 +142,16 @@ try {
 		letter-spacing: 0.25em;
 		text-transform: uppercase;
 		color: rgba(247, 240, 230, 0.35);
-		margin-bottom: 1.5rem;
+		margin-bottom: 3rem;
 	}
 
 	.footer-links {
 		display: flex;
 		justify-content: center;
-		gap: 2rem;
+		gap: 2.5rem;
 		flex-wrap: wrap;
-		margin-bottom: 1.5rem;
+		margin-bottom: 3rem;
 	}
-
 	.footer-links a {
 		font-family: "Lato", sans-serif;
 		font-size: 0.7rem;
@@ -125,15 +162,23 @@ try {
 		text-decoration: none;
 		transition: color 0.2s;
 	}
-
-	.footer-links a:hover {
-		color: var(--canela);
-	}
+	.footer-links a:hover { color: var(--canela); }
 
 	.footer-copy {
 		font-size: 0.68rem;
 		font-weight: 300;
-		color: rgba(247, 240, 230, 0.2);
+		color: rgba(247, 240, 230, 0.15);
 		letter-spacing: 0.08em;
+	}
+
+	@keyframes fadeIn {
+		from { opacity: 0; transform: translateY(20px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	@media (max-width: 640px) {
+		footer { padding: 4rem 1.5rem 3rem; }
+		.footer-cta { margin-bottom: 4rem; }
+		.footer-links { gap: 1.5rem; }
 	}
 </style>

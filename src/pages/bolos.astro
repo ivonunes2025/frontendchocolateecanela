@@ -1,0 +1,220 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+
+const STRAPI_URL = "http://localhost:1337";
+
+let hero = {
+    Titulo: "Os Nossos Bolos Artesanais",
+    Subtitulo: "Feitos com paixão e os melhores ingredientes.",
+    Tagline: "Doce & Artesanal"
+};
+
+let bolosArtesanais: any[] = [];
+
+try {
+    // 1. Buscar Hero (se quiseres que seja dinâmico, ou manter fixo como pediste)
+    // Para já, mantemos o título fixo "Os Nossos Bolos Artesanais" como pediste
+    
+    // 2. Buscar Bolos do Strapi
+    const bolosRes = await fetch(`${STRAPI_URL}/api/bolo-artesanals?populate=*`);
+    if (bolosRes.ok) {
+        const json = await bolosRes.json();
+        bolosArtesanais = json.data;
+    }
+} catch (error) {
+    console.error("Erro ao buscar bolos:", error);
+}
+
+const getImgUrl = (imgData: any) => {
+	const data = imgData?.data?.attributes || imgData?.data || imgData;
+	const url = data?.url;
+	if (!url) return null;
+	return url.startsWith('http') ? url : `${STRAPI_URL}${url}`;
+};
+---
+
+<Layout title="Bolos Artesanais | Chocolate & Canela">
+    <Navbar />
+
+    <main class="bolos-page">
+        <!-- Hero da Página -->
+        <header class="bolos-hero">
+            <div class="bolos-hero-inner">
+                <p class="bolos-eyebrow">{hero.Tagline}</p>
+                <h1 class="bolos-title">{hero.Titulo}</h1>
+                <p class="bolos-subtitle">{hero.Subtitulo}</p>
+                <div class="bolos-hero-divider"></div>
+            </div>
+        </header>
+
+        <!-- Galeria de Bolos -->
+        <section class="bolos-gallery">
+            {bolosArtesanais && bolosArtesanais.length > 0 ? (
+                <div class="bolos-grid">
+                    {bolosArtesanais.map((bolo: any, index: number) => {
+                        const data = bolo.attributes || bolo;
+                        const fullImgUrl = getImgUrl(data.Imagem_Bolo);
+                        
+                        return (
+                            <div class="bolo-card glass">
+                                {fullImgUrl && (
+                                    <div class="bolo-img-wrap">
+                                        <img src={fullImgUrl} alt={data.Nome_Do_Bolo || "Bolo Artesanal"} />
+                                    </div>
+                                )}
+                                <div class="bolo-info">
+                                    <h3 class="bolo-nome">{data.Nome_Do_Bolo || "Bolo Especial"}</h3>
+                                    {data.Descricao && <p class="bolo-desc">{data.Descricao}</p>}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            ) : (
+                <div class="empty-state glass">
+                    <p>Estamos a preparar a nossa vitrine digital. Galeria disponível brevemente!</p>
+                </div>
+            )}
+        </section>
+    </main>
+
+    <Footer />
+</Layout>
+
+<style>
+    .bolos-page {
+        min-height: 100vh;
+        padding-bottom: 8rem;
+    }
+
+    /* ── Hero ── */
+    .bolos-hero {
+        padding: 12rem 3rem 6rem;
+        text-align: center;
+        background: var(--choc);
+    }
+
+    .bolos-hero-inner {
+        animation: heroFade 1s ease both;
+    }
+
+    @keyframes heroFade {
+        from { opacity: 0; transform: translateY(16px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .bolos-eyebrow {
+        font-family: "Lato", sans-serif;
+        font-size: 0.65rem;
+        font-weight: 300;
+        letter-spacing: 0.4em;
+        text-transform: uppercase;
+        color: var(--canela);
+        margin-bottom: 1.5rem;
+    }
+
+    .bolos-title {
+        font-family: "Cinzel", serif;
+        font-size: clamp(2.2rem, 6vw, 4.5rem);
+        font-weight: 400;
+        color: var(--cream);
+        line-height: 1.1;
+        letter-spacing: 0.05em;
+        margin-bottom: 1.5rem;
+    }
+
+    .bolos-subtitle {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.1rem;
+        font-style: italic;
+        color: rgba(247, 240, 230, 0.5);
+    }
+
+    .bolos-hero-divider {
+        width: 60px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--canela), transparent);
+        margin: 2.5rem auto 0;
+    }
+
+    /* ── Galeria ── */
+    .bolos-gallery {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+
+    .bolos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 2.5rem;
+    }
+
+    .bolo-card {
+        border-radius: 24px;
+        overflow: hidden;
+        transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+
+    .bolo-card:hover {
+        transform: translateY(-8px);
+    }
+
+    .bolo-img-wrap {
+        height: 350px;
+        overflow: hidden;
+    }
+
+    .bolo-img-wrap img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.6s ease;
+    }
+
+    .bolo-card:hover .bolo-img-wrap img {
+        transform: scale(1.05);
+    }
+
+    .bolo-info {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .bolo-nome {
+        font-family: "Cinzel", serif;
+        font-size: 1.25rem;
+        color: var(--cream);
+        margin-bottom: 0.8rem;
+    }
+
+    .bolo-desc {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 0.95rem;
+        font-style: italic;
+        color: var(--cream-dark);
+        opacity: 0.7;
+        line-height: 1.6;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 6rem 2rem;
+        border-radius: 40px;
+        border: 1px dashed rgba(192, 125, 62, 0.2);
+    }
+
+    .empty-state p {
+        font-family: "Cormorant Garamond", serif;
+        font-size: 1.25rem;
+        color: var(--cream-dark);
+        font-style: italic;
+    }
+
+    @media (max-width: 768px) {
+        .bolos-hero { padding: 9rem 2rem 4rem; }
+        .bolo-img-wrap { height: 280px; }
+    }
+</style>

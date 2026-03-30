@@ -1,0 +1,115 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
+
+const STRAPI_URL = "http://localhost:1337";
+
+// Dados da Política de Privacidade (Fallbacks)
+let politica = {
+	Titulo: "Política de Privacidade",
+	Conteudo: "O conteúdo da política de privacidade será carregado do Strapi em breve.",
+};
+
+try {
+	const res = await fetch(`${STRAPI_URL}/api/politica-privacidades?populate=*`);
+	if (res.ok) {
+		const json = await res.json();
+		// Como é uma Collection Type, pegamos no primeiro item da lista
+		const data = json.data?.[0]?.attributes || json.data?.[0];
+		if (data) {
+			politica.Titulo = data.Titulo || data.titulo || politica.Titulo;
+			politica.Conteudo = data.Conteudo || data.conteudo || politica.Conteudo;
+		}
+	}
+} catch (error) {
+	console.error("Erro ao procurar Política de Privacidade no Strapi:", error);
+}
+---
+
+<Layout title={`${politica.Titulo} – Chocolate & Canela`}>
+	<Navbar />
+
+	<main>
+		<section class="legal-hero">
+			<div class="container">
+				<span class="section-label">Informação Legal</span>
+				<h1>{politica.Titulo}</h1>
+				<div class="hero-divider"></div>
+			</div>
+		</section>
+
+		<section class="legal-content">
+			<div class="container glass">
+				<div class="rich-text" set:html={politica.Conteudo} />
+			</div>
+		</section>
+	</main>
+
+	<Footer />
+</Layout>
+
+<style>
+	/* ───── HERO LEGAL ───── */
+	.legal-hero {
+		padding: 12rem 2rem 6rem;
+		text-align: center;
+		background: var(--choc);
+	}
+	.container {
+		max-width: 900px;
+		margin: 0 auto;
+	}
+	h1 {
+		font-family: "Cinzel", serif;
+		font-size: clamp(2.5rem, 6vw, 4.5rem);
+		color: var(--cream);
+		margin-bottom: 2rem;
+	}
+	.section-label {
+		font-family: 'Lato', sans-serif;
+		font-size: 0.75rem;
+		letter-spacing: 0.4em;
+		text-transform: uppercase;
+		color: var(--canela);
+		display: block;
+		margin-bottom: 1.5rem;
+	}
+	.hero-divider {
+		width: 60px;
+		height: 1px;
+		background: var(--canela);
+		margin: 0 auto;
+	}
+
+	/* ───── CONTEÚDO LEGAL ───── */
+	.legal-content {
+		padding: 0 2rem 10rem;
+		background: var(--choc);
+	}
+	.legal-content .container {
+		padding: 4rem;
+		border-radius: 40px;
+	}
+	.rich-text {
+		color: var(--cream-dark);
+		line-height: 1.8;
+		font-size: 1.05rem;
+		font-weight: 300;
+	}
+	:global(.rich-text p) {
+		margin-bottom: 1.5rem;
+	}
+	:global(.rich-text h2) {
+		font-family: 'Cinzel', serif;
+		color: var(--cream);
+		font-size: 1.5rem;
+		margin: 3rem 0 1.5rem;
+	}
+
+	@media (max-width: 768px) {
+		.legal-hero { padding: 8rem 1.5rem 4rem; }
+		.legal-content { padding: 0 1.5rem 6rem; }
+		.legal-content .container { padding: 2.5rem 1.5rem; }
+	}
+</style>

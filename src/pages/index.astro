@@ -1,51 +1,122 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import Navbar from '../components/Navbar.astro';
-import Footer from '../components/Footer.astro';
+import Layout from "../layouts/Layout.astro";
+import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
 
 const STRAPI_URL = "http://localhost:1337";
 
-// Inicializar dados com fallbacks vazios
+// Inicializar dados (Com fallbacks para segurança)
 let configuracao = {
 	Numero_Telemovel: "",
 	Morada: "",
 };
-
-let bolosArtesanais: any[] = [];
+let hero = {
+	Tagline: "Pastelaria & Padaria Gourmet · Felgueiras",
+	Titulo: "Chocolate & Canela",
+	Subtitulo: "Uma experiência artesanal, feita com amor e sabor.",
+	Imagem_Fundo: null,
+};
+let sobre = {
+	Label: "A nossa história",
+	Titulo: "Momentos doces em cada visita",
+	Conteudo: "Na Chocolate & Canela Gourmet encontras o melhor da pastelaria e padaria artesanal, preparada com ingredientes de qualidade e receitas que aquecem a alma.",
+	Segunda_Parte: "",
+	Imagem: null,
+};
+let galeriaPrincipal: any[] = [];
 
 try {
-	// Buscar Configurações Gerais
 	const configRes = await fetch(`${STRAPI_URL}/api/configuracao-geral`);
 	if (configRes.ok) {
 		const json = await configRes.json();
 		configuracao = json.data.attributes || json.data;
 	}
 
-	// Buscar Bolos Artesanais (para a galeria)
-	const bolosRes = await fetch(`${STRAPI_URL}/api/bolo-artesanals?populate=*`);
-	if (bolosRes.ok) {
-		const json = await bolosRes.json();
-		bolosArtesanais = json.data;
+	const heroRes = await fetch(`${STRAPI_URL}/api/hero-principal?populate=*`);
+	if (heroRes.ok) {
+		const json = await heroRes.json();
+		const data = json.data.attributes || json.data;
+		if (data) hero = { ...hero, ...data };
+	}
+
+	const sobreRes = await fetch(`${STRAPI_URL}/api/nossa-historias?populate=*`);
+	if (sobreRes.ok) {
+		const json = await sobreRes.json();
+		const data = json.data?.[0]?.attributes || json.data?.[0];
+		if (data) {
+			sobre = {
+				...sobre,
+				Titulo: data.titulo || data.Titulo || sobre.Titulo,
+				Conteudo: data.descricao || data.Descricao || sobre.Conteudo,
+			};
+		}
+	}
+
+	const galeriaRes = await fetch(`${STRAPI_URL}/api/galeria-principals?populate=*`);
+	if (galeriaRes.ok) {
+		const json = await galeriaRes.json();
+		galeriaPrincipal = json.data;
 	}
 } catch (error) {
 	console.error("Erro ao buscar dados do Strapi:", error);
 }
 
-// Formatar número para link de telefone
-const phoneLink = configuracao.Numero_Telemovel ? configuracao.Numero_Telemovel.replace(/\s+/g, '') : "";
+// Helper para Imagens (Prioriza WebP/Thumbnail se pedido para ser pequeno)
+const getImgUrl = (imgData: any, thumbnail = false) => {
+	const getSingleUrl = (data: any) => {
+		if (!data) return null;
+		const attrs = data.attributes || data;
+		// Tentar miniatura webp se disponível e for pedido thumbnail
+		const formats = attrs.formats;
+		let url = attrs.url;
+		
+		if (thumbnail && formats?.thumbnail?.url) {
+			url = formats.thumbnail.url;
+		} else if (thumbnail && formats?.small?.url) {
+			url = formats.small.url;
+		}
+
+		if (!url) return null;
+		return url.startsWith("http") ? url : `${STRAPI_URL}${url}`;
+	};
+
+	if (Array.isArray(imgData)) {
+		return imgData.map(getSingleUrl).filter(Boolean);
+	}
+	if (Array.isArray(imgData?.data)) {
+		return imgData.data.map(getSingleUrl).filter(Boolean);
+	}
+	
+	const singleData = imgData?.data || imgData;
+	return getSingleUrl(singleData);
+};
+
+const heroImg = getImgUrl(hero.Imagem_Fundo) as string | null;
+const phoneLink = configuracao.Numero_Telemovel ? configuracao.Numero_Telemovel.replace(/\s+/g, "") : "";
+
+// Processar Galeria (Versão Ticker - Pequena)
+let fotosTicker: string[] = [];
+if (galeriaPrincipal && galeriaPrincipal.length > 0) {
+	const primeiroItem = galeriaPrincipal[0].attributes || galeriaPrincipal[0];
+	const imagensArray = getImgUrl(primeiroItem.Imagem, true); // true = usar miniaturas
+	if (Array.isArray(imagensArray)) {
+		fotosTicker = imagensArray as string[];
+	} else {
+		fotosTicker = galeriaPrincipal.map((item: any) => getImgUrl(item.attributes?.Imagem || item.Imagem, true)).filter((url): url is string => typeof url === 'string');
+	}
+}
 ---
 
 <Layout title="Chocolate & Canela Gourmet – Felgueiras">
-	
 	<Navbar />
 
 	<main>
-		<section class="hero bg-pattern" id="inicio">
+		<section class="hero" id="inicio" style={heroImg ? `background-image: linear-gradient(rgba(27, 13, 8, 0.7), rgba(27, 13, 8, 0.7)), url(${heroImg}); background-size: cover; background-position: center;` : ""}>
 			<div class="hero-inner relative z-10">
-				<p class="hero-tagline">Pastelaria & Padaria Gourmet · Felgueiras</p>
-				<h1>Chocolate<em>& Canela</em></h1>
+				{hero.Tagline && <p class="hero-tagline">{hero.Tagline}</p>}
+				{hero.Titulo && <h1 set:html={hero.Titulo.replace("&", "<em>&</em>")} />}
 				<div class="hero-divider"></div>
-				<p class="hero-sub">Uma experiencia artesanal, feita com amor e sabor.</p>
+				{hero.Subtitulo && <p class="hero-sub">{hero.Subtitulo}</p>}
 				<div class="hero-cta">
 					{configuracao.Numero_Telemovel && (
 						<a href={`tel:${phoneLink}`} class="btn btn-primary">Ligar agora</a>
@@ -60,126 +131,91 @@ const phoneLink = configuracao.Numero_Telemovel ? configuracao.Numero_Telemovel.
 		</div>
 
 		<section class="about" id="sobre">
-			<div class="about-img">
-				<img 
-					src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&q=80" 
-					alt="Interior Chocolate & Canela Gourmet" 
-				/>
+			<div class="about-text glass">
+				<span class="section-label">{sobre.Label}</span>
+				{sobre.Titulo && <h2>{sobre.Titulo}</h2>}
+				{sobre.Conteudo && <p>{sobre.Conteudo}</p>}
 			</div>
-			<div class="about-text">
-				<p class="section-label">A nossa história</p>
-				<h2>Momentos doces<br>em cada visita</h2>
-				<p>Na Chocolate & Canela Gourmet encontras o melhor da pastelaria e padaria artesanal, preparada com ingredientes de qualidade e receitas que aquecem a alma.</p>
-				<p>Desde os bolos feitos no dia às sobremesas que não resistirás a provar, cada detalhe é pensado para te proporcionar uma experiência inesquecível.</p>
-				<div class="stars">
-					<span class="stars-icons">★★★★★</span>
-					<span class="stars-text">4.5 · 3 511 opiniões no Google</span>
+		</section>
+
+		<!-- Carrossel de Fotos Horizontal Ultra-Slim -->
+		<section class="ticker-section" id="espaco">
+			{fotosTicker && fotosTicker.length > 0 && (
+				<div class="ticker-container">
+					<div class="ticker-track">
+						{[...fotosTicker, ...fotosTicker, ...fotosTicker].map((fotoUrl: string) => (
+							<div class="ticker-item glass">
+								<img src={fotoUrl} alt="Miniatura Chocolate & Canela" />
+							</div>
+						))}
+					</div>
+				</div>
+			)}
+
+			<div class="gallery-footer glass">
+				<div class="footer-content">
+					<h3 class="footer-title">Descubra os Nossos Bolos Artesanais</h3>
+					<p class="footer-text">Explora a nossa vitrine digital de bolos personalizados.</p>
+					<a href="/bolos" class="btn btn-primary">Ver Nossos Bolos</a>
 				</div>
 			</div>
 		</section>
-
-		<section class="photos-grid" id="bolos">
-			{bolosArtesanais && bolosArtesanais.length > 0 ? (
-				bolosArtesanais.slice(0, 5).map((bolo: any, index: number) => {
-					const data = bolo.attributes || bolo;
-					// No Strapi v5, a imagem pode estar diretamente no objeto ou em data.attributes
-					const imgData = data.Imagem_Bolo?.data?.attributes || data.Imagem_Bolo;
-					const imgUrl = imgData?.url;
-					const fullImgUrl = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : `${STRAPI_URL}${imgUrl}`) : "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80";
-					
-					return (
-						<div class={`photo-cell ${index === 0 ? 'big' : ''}`}>
-							<img src={fullImgUrl} alt={data.Nome_Do_Bolo || "Bolo Artesanal"} />
-						</div>
-					);
-				})
-			) : (
-				// Fallback apenas visual se o Strapi não tiver dados
-				<>
-					<div class="photo-cell big">
-						<img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80" alt="Bolo de chocolate" />
-					</div>
-					<div class="photo-cell">
-						<img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80" alt="Pastelaria" />
-					</div>
-					<div class="photo-cell">
-						<img src="https://images.unsplash.com/photo-1464305795204-6f5bbfc7fb81?w=600&q=80" alt="Bolos" />
-					</div>
-					<div class="photo-cell">
-						<img src="https://images.unsplash.com/photo-1600850056064-a8b380df8395?w=600&q=80" alt="Interior pastelaria" />
-					</div>
-					<div class="photo-cell">
-						<img src="https://images.unsplash.com/photo-1486427944299-d1955d23e34d?w=600&q=80" alt="Doces artesanais" />
-					</div>
-				</>
-			)}
-		</section>
-
-		</main>
+	</main>
 
 	<Footer />
-
 </Layout>
 
 <style>
 	/* ───── HERO ───── */
-	.hero {
-		min-height: 100vh;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 6rem 2rem 2rem;
-		text-align: center;
-	}
-
+	.hero { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 6rem 2rem 2rem; text-align: center; }
 	.hero-inner { animation: fadeUp 1.2s ease both; }
 	.hero-tagline { font-weight: 300; letter-spacing: 0.35em; font-size: 0.7rem; text-transform: uppercase; color: var(--canela); margin-bottom: 1.5rem; }
-	.hero h1 { font-family: 'Cinzel', serif; font-size: clamp(2.4rem, 8vw, 6rem); color: var(--cream); line-height: 1.05; }
-	.hero h1 em { font-style: normal; color: var(--canela-light); display: block; }
+	.hero h1 { font-family: "Cinzel", serif; font-size: clamp(2.4rem, 8vw, 6rem); color: var(--cream); line-height: 1.05; }
+	:global(.hero h1 em) { font-style: normal; color: var(--canela-light); display: block; }
 	.hero-divider { width: 80px; height: 1px; background: linear-gradient(90deg, transparent, var(--canela), transparent); margin: 2rem auto; }
-	.hero-sub { font-family: 'Cormorant Garamond', serif; font-size: clamp(1rem, 2vw, 1.25rem); font-style: italic; color: var(--cream-dark); }
+	.hero-sub { font-family: "Cormorant Garamond", serif; font-size: clamp(1rem, 2vw, 1.25rem); font-style: italic; color: var(--cream-dark); }
 	.hero-cta { display: flex; gap: 1rem; margin-top: 3rem; justify-content: center; flex-wrap: wrap; }
 
 	/* ───── STRIP ───── */
-	.strip {
-		background: var(--canela);
-		padding: 1rem 2rem;
-		text-align: center;
-		font-family: 'Lato', sans-serif;
-		font-weight: 300;
-		letter-spacing: 0.25em;
-		font-size: 0.72rem;
-		text-transform: uppercase;
-		color: var(--choc);
-	}
+	.strip { background: var(--canela); padding: 1rem 2rem; text-align: center; font-family: "Lato", sans-serif; font-weight: 300; letter-spacing: 0.25em; font-size: 0.72rem; text-transform: uppercase; color: var(--choc); position: relative; z-index: 5; }
 
 	/* ───── ABOUT ───── */
-	.about { display: grid; grid-template-columns: 1fr 1fr; min-height: 70vh; }
-	.about-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
-	.about-text { background: var(--cream); padding: clamp(3rem, 6vw, 6rem) clamp(2rem, 5vw, 5rem); display: flex; flex-direction: column; justify-content: center; }
-	.section-label { font-weight: 300; letter-spacing: 0.3em; font-size: 0.65rem; text-transform: uppercase; color: var(--canela); margin-bottom: 1.2rem; }
-	.about-text h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 300; color: var(--choc); line-height: 1.2; margin-bottom: 1.5rem; }
-	.about-text p { font-size: 0.95rem; font-weight: 300; line-height: 1.9; color: var(--text-light); max-width: 480px; margin-bottom: 1rem; }
-	.stars { margin-top: 2rem; display: flex; align-items: center; gap: 0.6rem; }
-	.stars-icons { color: var(--canela); letter-spacing: 2px; }
-	.stars-text { font-size: 0.75rem; color: var(--text-light); }
+	.about { padding: 6rem 2rem 2rem; display: flex; justify-content: center; }
+	.about-text { padding: clamp(3rem, 6vw, 4rem); display: flex; flex-direction: column; align-items: center; text-align: center; max-width: 900px; border-radius: 40px; width: 100%; }
+	.about-text h2 { font-family: "Cormorant Garamond", serif; font-size: clamp(2.2rem, 5vw, 3rem); font-weight: 300; color: var(--cream); line-height: 1.2; margin-bottom: 2rem; }
+	.about-text p { font-size: 1rem; font-weight: 300; line-height: 1.8; color: var(--cream-dark); opacity: 0.8; max-width: 700px; }
 
-	/* ───── PHOTOS GRID ───── */
-	.photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 280px 280px; background: var(--choc); }
-	.photo-cell { overflow: hidden; position: relative; }
-	.photo-cell.big { grid-row: span 2; }
-	.photos-grid img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: all 0.5s ease; filter: sepia(15%); }
-	.photo-cell:hover img { opacity: 1; transform: scale(1.05); filter: none; }
+	/* ───── TICKER ULTRA-SLIM ───── */
+	.ticker-section { padding: 3rem 0; overflow: hidden; }
+	.ticker-container { width: 100%; display: flex; margin-bottom: 4rem; mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent); }
+	.ticker-track { display: flex; gap: 12px; animation: scrollTicker 30s linear infinite; }
+	.ticker-track:hover { animation-play-state: paused; }
 
-	/* ───── ANIMATIONS ───── */
-	@keyframes fadeUp {
-		from { opacity: 0; transform: translateY(24px); }
-		to { opacity: 1; transform: translateY(0); }
+	.ticker-item {
+		flex: 0 0 200px;
+		height: 150px; /* Muito pequeno como pedido */
+		border-radius: 12px;
+		overflow: hidden;
+		transition: transform 0.4s ease;
+	}
+	.ticker-item img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; }
+	.ticker-item:hover { transform: scale(1.05); z-index: 2; }
+
+	@keyframes scrollTicker {
+		0% { transform: translateX(0); }
+		100% { transform: translateX(calc(-212px * 5)); } /* Baseado em 5 fotos iniciais + gap */
 	}
 
+	/* ── Gallery Footer ── */
+	.gallery-footer { max-width: 800px; margin: 0 auto; padding: 2.5rem; text-align: center; border-radius: 40px; position: relative; z-index: 10; backdrop-filter: blur(20px); }
+	.footer-title { font-family: "Cinzel", serif; font-size: 1.4rem; color: var(--cream); margin-bottom: 0.8rem; }
+	.footer-text { font-family: "Cormorant Garamond", serif; font-size: 1rem; color: var(--cream-dark); font-style: italic; margin-bottom: 1.5rem; }
+
+	/* ───── ANIMATIONS ───── */
+	@keyframes fadeUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+
 	@media (max-width: 768px) {
-		.about { grid-template-columns: 1fr; }
-		.photos-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
-		.photo-cell.big { grid-row: span 1; height: 300px; }
+		.ticker-item { flex: 0 0 160px; height: 120px; }
+		.gallery-footer { margin: 1.5rem; padding: 2rem; }
 	}
 </style>

@@ -1,0 +1,26 @@
+---
+interface Props {
+	title: string;
+	body: string;
+	icon: string;
+}
+
+const { icon, title, body } = Astro.props;
+---
+<div class="info-card">
+	<span class="icon">{icon}</span>
+	<h3>{title}</h3>
+	<p set:html={body}></p>
+</div>
+
+<style>
+	.info-card {
+		padding: 3rem;
+		text-align: center;
+		border-right: 1px solid rgba(192,125,62,0.2);
+		background: var(--choc);
+	}
+	.icon { font-size: 2rem; display: block; margin-bottom: 1rem; }
+	h3 { font-family: 'Cinzel', serif; color: var(--canela-light); letter-spacing: 0.2em; font-size: 0.8rem; margin-bottom: 1rem; }
+	p { font-family: 'Cormorant Garamond', serif; color: var(--cream-dark); line-height: 1.6; }
+</style>

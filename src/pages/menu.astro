@@ -1,0 +1,26 @@
+---
+// Importa o teu Layout (a "moldura" do site)
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+import MenuComponent from '../components/Menu.astro';
+import axios from 'axios';
+---
+
+<Layout title="Menu | Chocolate & Canela">
+    <Navbar />
+    <main class="bg-pattern min-h-screen">
+        <header class="page-header">
+            <div class="relative z-10">
+                <h1>O Nosso Menu</h1>
+                <p class="subtitle">Artesanal & Gourmet</p>
+                <div class="w-24 h-px bg-[var(--canela)] mx-auto mt-6"></div>
+            </div>
+        </header>
+        
+        <div class="pb-24">
+            <MenuComponent />
+        </div>
+    </main>
+    <Footer />
+</Layout>

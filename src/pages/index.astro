@@ -1,0 +1,185 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import Footer from '../components/Footer.astro';
+
+const STRAPI_URL = "http://localhost:1337";
+
+// Inicializar dados com fallbacks vazios
+let configuracao = {
+	Numero_Telemovel: "",
+	Morada: "",
+};
+
+let bolosArtesanais: any[] = [];
+
+try {
+	// Buscar Configurações Gerais
+	const configRes = await fetch(`${STRAPI_URL}/api/configuracao-geral`);
+	if (configRes.ok) {
+		const json = await configRes.json();
+		configuracao = json.data.attributes || json.data;
+	}
+
+	// Buscar Bolos Artesanais (para a galeria)
+	const bolosRes = await fetch(`${STRAPI_URL}/api/bolo-artesanals?populate=*`);
+	if (bolosRes.ok) {
+		const json = await bolosRes.json();
+		bolosArtesanais = json.data;
+	}
+} catch (error) {
+	console.error("Erro ao buscar dados do Strapi:", error);
+}
+
+// Formatar número para link de telefone
+const phoneLink = configuracao.Numero_Telemovel ? configuracao.Numero_Telemovel.replace(/\s+/g, '') : "";
+---
+
+<Layout title="Chocolate & Canela Gourmet – Felgueiras">
+	
+	<Navbar />
+
+	<main>
+		<section class="hero bg-pattern" id="inicio">
+			<div class="hero-inner relative z-10">
+				<p class="hero-tagline">Pastelaria & Padaria Gourmet · Felgueiras</p>
+				<h1>Chocolate<em>& Canela</em></h1>
+				<div class="hero-divider"></div>
+				<p class="hero-sub">Uma experiencia artesanal, feita com amor e sabor.</p>
+				<div class="hero-cta">
+					{configuracao.Numero_Telemovel && (
+						<a href={`tel:${phoneLink}`} class="btn btn-primary">Ligar agora</a>
+					)}
+					<a href="/menu" class="btn btn-ghost">Ver Menu</a>
+				</div>
+			</div>
+		</section>
+
+		<div class="strip">
+			✦ Aberto de Segunda a Domingo ✦ {configuracao.Morada} ✦ {configuracao.Numero_Telemovel} ✦
+		</div>
+
+		<section class="about" id="sobre">
+			<div class="about-img">
+				<img 
+					src="https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=800&q=80" 
+					alt="Interior Chocolate & Canela Gourmet" 
+				/>
+			</div>
+			<div class="about-text">
+				<p class="section-label">A nossa história</p>
+				<h2>Momentos doces<br>em cada visita</h2>
+				<p>Na Chocolate & Canela Gourmet encontras o melhor da pastelaria e padaria artesanal, preparada com ingredientes de qualidade e receitas que aquecem a alma.</p>
+				<p>Desde os bolos feitos no dia às sobremesas que não resistirás a provar, cada detalhe é pensado para te proporcionar uma experiência inesquecível.</p>
+				<div class="stars">
+					<span class="stars-icons">★★★★★</span>
+					<span class="stars-text">4.5 · 3 511 opiniões no Google</span>
+				</div>
+			</div>
+		</section>
+
+		<section class="photos-grid" id="bolos">
+			{bolosArtesanais && bolosArtesanais.length > 0 ? (
+				bolosArtesanais.slice(0, 5).map((bolo: any, index: number) => {
+					const data = bolo.attributes || bolo;
+					// No Strapi v5, a imagem pode estar diretamente no objeto ou em data.attributes
+					const imgData = data.Imagem_Bolo?.data?.attributes || data.Imagem_Bolo;
+					const imgUrl = imgData?.url;
+					const fullImgUrl = imgUrl ? (imgUrl.startsWith('http') ? imgUrl : `${STRAPI_URL}${imgUrl}`) : "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80";
+					
+					return (
+						<div class={`photo-cell ${index === 0 ? 'big' : ''}`}>
+							<img src={fullImgUrl} alt={data.Nome_Do_Bolo || "Bolo Artesanal"} />
+						</div>
+					);
+				})
+			) : (
+				// Fallback apenas visual se o Strapi não tiver dados
+				<>
+					<div class="photo-cell big">
+						<img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=800&q=80" alt="Bolo de chocolate" />
+					</div>
+					<div class="photo-cell">
+						<img src="https://images.unsplash.com/photo-1509440159596-0249088772ff?w=600&q=80" alt="Pastelaria" />
+					</div>
+					<div class="photo-cell">
+						<img src="https://images.unsplash.com/photo-1464305795204-6f5bbfc7fb81?w=600&q=80" alt="Bolos" />
+					</div>
+					<div class="photo-cell">
+						<img src="https://images.unsplash.com/photo-1600850056064-a8b380df8395?w=600&q=80" alt="Interior pastelaria" />
+					</div>
+					<div class="photo-cell">
+						<img src="https://images.unsplash.com/photo-1486427944299-d1955d23e34d?w=600&q=80" alt="Doces artesanais" />
+					</div>
+				</>
+			)}
+		</section>
+
+		</main>
+
+	<Footer />
+
+</Layout>
+
+<style>
+	/* ───── HERO ───── */
+	.hero {
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 6rem 2rem 2rem;
+		text-align: center;
+	}
+
+	.hero-inner { animation: fadeUp 1.2s ease both; }
+	.hero-tagline { font-weight: 300; letter-spacing: 0.35em; font-size: 0.7rem; text-transform: uppercase; color: var(--canela); margin-bottom: 1.5rem; }
+	.hero h1 { font-family: 'Cinzel', serif; font-size: clamp(2.4rem, 8vw, 6rem); color: var(--cream); line-height: 1.05; }
+	.hero h1 em { font-style: normal; color: var(--canela-light); display: block; }
+	.hero-divider { width: 80px; height: 1px; background: linear-gradient(90deg, transparent, var(--canela), transparent); margin: 2rem auto; }
+	.hero-sub { font-family: 'Cormorant Garamond', serif; font-size: clamp(1rem, 2vw, 1.25rem); font-style: italic; color: var(--cream-dark); }
+	.hero-cta { display: flex; gap: 1rem; margin-top: 3rem; justify-content: center; flex-wrap: wrap; }
+
+	/* ───── STRIP ───── */
+	.strip {
+		background: var(--canela);
+		padding: 1rem 2rem;
+		text-align: center;
+		font-family: 'Lato', sans-serif;
+		font-weight: 300;
+		letter-spacing: 0.25em;
+		font-size: 0.72rem;
+		text-transform: uppercase;
+		color: var(--choc);
+	}
+
+	/* ───── ABOUT ───── */
+	.about { display: grid; grid-template-columns: 1fr 1fr; min-height: 70vh; }
+	.about-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+	.about-text { background: var(--cream); padding: clamp(3rem, 6vw, 6rem) clamp(2rem, 5vw, 5rem); display: flex; flex-direction: column; justify-content: center; }
+	.section-label { font-weight: 300; letter-spacing: 0.3em; font-size: 0.65rem; text-transform: uppercase; color: var(--canela); margin-bottom: 1.2rem; }
+	.about-text h2 { font-family: 'Cormorant Garamond', serif; font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 300; color: var(--choc); line-height: 1.2; margin-bottom: 1.5rem; }
+	.about-text p { font-size: 0.95rem; font-weight: 300; line-height: 1.9; color: var(--text-light); max-width: 480px; margin-bottom: 1rem; }
+	.stars { margin-top: 2rem; display: flex; align-items: center; gap: 0.6rem; }
+	.stars-icons { color: var(--canela); letter-spacing: 2px; }
+	.stars-text { font-size: 0.75rem; color: var(--text-light); }
+
+	/* ───── PHOTOS GRID ───── */
+	.photos-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: 280px 280px; background: var(--choc); }
+	.photo-cell { overflow: hidden; position: relative; }
+	.photo-cell.big { grid-row: span 2; }
+	.photos-grid img { width: 100%; height: 100%; object-fit: cover; opacity: 0.8; transition: all 0.5s ease; filter: sepia(15%); }
+	.photo-cell:hover img { opacity: 1; transform: scale(1.05); filter: none; }
+
+	/* ───── ANIMATIONS ───── */
+	@keyframes fadeUp {
+		from { opacity: 0; transform: translateY(24px); }
+		to { opacity: 1; transform: translateY(0); }
+	}
+
+	@media (max-width: 768px) {
+		.about { grid-template-columns: 1fr; }
+		.photos-grid { grid-template-columns: 1fr 1fr; grid-template-rows: auto; }
+		.photo-cell.big { grid-row: span 1; height: 300px; }
+	}
+</style>

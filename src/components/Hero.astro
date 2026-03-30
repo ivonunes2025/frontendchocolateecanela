@@ -1,0 +1,53 @@
+---
+const STRAPI_URL = "http://localhost:1337";
+
+let configuracao = {
+	Numero_Telemovel: "",
+};
+
+try {
+	const configRes = await fetch(`${STRAPI_URL}/api/configuracao-geral`);
+	if (configRes.ok) {
+		const json = await configRes.json();
+		configuracao = json.data.attributes || json.data;
+	}
+} catch (error) {
+	console.error("Erro ao buscar dados do Strapi para o Hero:", error);
+}
+
+const phoneLink = configuracao.Numero_Telemovel ? configuracao.Numero_Telemovel.replace(/\s+/g, '') : "";
+---
+
+<section class="hero" id="inicio">
+  <div class="hero-inner">
+    <p class="hero-tagline">Pastelaria & Padaria Gourmet · Felgueiras</p>
+    <h1>Chocolate<em>& Canela</em></h1>
+    <div class="hero-divider"></div>
+    <p class="hero-sub">Uma experiência artesanal, feita com amor e sabor.</p>
+    <div class="hero-cta">
+      {configuracao.Numero_Telemovel && (
+        <a href={`tel:${phoneLink}`} class="btn btn-primary">Ligar agora</a>
+      )}
+      <a href="#" target="_blank" class="btn btn-ghost">Como chegar</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero {
+    position: relative; min-height: 100vh; background: var(--choc);
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; overflow: hidden; padding: 6rem 2rem 2rem;
+  }
+  .hero::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(192,125,62,0.18) 0%, transparent 70%);
+  }
+  .hero-inner { position: relative; text-align: center; }
+  .hero-tagline { font-weight: 300; letter-spacing: 0.35em; font-size: 0.7rem; text-transform: uppercase; color: var(--canela); margin-bottom: 1.5rem; }
+  .hero h1 { font-family: 'Cinzel', serif; font-size: clamp(2.4rem, 8vw, 6rem); color: var(--cream); line-height: 1.05; }
+  .hero h1 em { font-style: normal; color: var(--canela-light); display: block; }
+  .hero-divider { width: 80px; height: 1px; background: linear-gradient(90deg, transparent, var(--canela), transparent); margin: 2rem auto; }
+  .hero-sub { font-family: 'Cormorant Garamond', serif; font-size: clamp(1rem, 2vw, 1.25rem); color: var(--cream-dark); font-style: italic; }
+  .hero-cta { display: flex; gap: 1rem; margin-top: 3rem; flex-wrap: wrap; justify-content: center; }
+</style>

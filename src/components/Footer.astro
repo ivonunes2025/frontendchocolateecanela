@@ -1,0 +1,114 @@
+---
+// 1. Definimos o endereço do Strapi
+const STRAPI_URL = "http://localhost:1337";
+
+// 2. Valores por defeito vazios (serão preenchidos pelo Strapi)
+let contactos = {
+	Numero_Telemovel: "",
+	Morada: "",
+	Link_Rede_Social: "",
+	Link_GPS_Mapa: "",
+	Texto_Direitos_Rodape: ""
+};
+
+// 3. Vamos ao Strapi buscar os dados reais criados por ti
+try {
+	const resposta = await fetch(`${STRAPI_URL}/api/configuracao-geral`);
+	
+	if (resposta.ok) {
+		const json = await resposta.json();
+		
+		if (json.data) {
+			// Atualizamos as variáveis com os dados do Strapi (suporta v4 e v5)
+			const attrs = json.data.attributes || json.data;
+			
+			// Só substituímos se o cliente tiver preenchido o campo no Strapi
+			if (attrs.Numero_Telemovel) contactos.Numero_Telemovel = attrs.Numero_Telemovel;
+			if (attrs.Morada) contactos.Morada = attrs.Morada;
+			if (attrs.Link_Rede_Social) contactos.Link_Rede_Social = attrs.Link_Rede_Social;
+			if (attrs.Link_GPS_Mapa) contactos.Link_GPS_Mapa = attrs.Link_GPS_Mapa;
+			if (attrs.Texto_Direitos_Rodape) contactos.Texto_Direitos_Rodape = attrs.Texto_Direitos_Rodape;
+		}
+	}
+} catch (erro) {
+	console.error("Aviso: Não foi possível ligar ao Strapi para carregar o Footer.", erro);
+}
+---
+
+<footer>
+	<div class="footer-logo">
+		Chocolate <span>&</span> Canela 
+		<span class="gourmet-text">Gourmet</span>
+	</div>
+	
+	<div class="footer-sub">{contactos.Morada}</div>
+	
+	<div class="footer-links">
+		<a href={`tel:${contactos.Numero_Telemovel.replace(/\s+/g, '')}`}>{contactos.Numero_Telemovel}</a>
+		
+		<a href={contactos.Link_Rede_Social} target="_blank" rel="noopener noreferrer">Facebook</a>
+		
+		<a href={contactos.Link_GPS_Mapa} target="_blank" rel="noopener noreferrer">Localização</a>
+	</div>
+	
+	<div class="footer-copy">{contactos.Texto_Direitos_Rodape}</div>
+</footer>
+
+<style>
+	/* Estilos exatos do design original */
+	footer {
+		background: var(--choc);
+		padding: 3rem 2rem;
+		text-align: center;
+		border-top: 1px solid rgba(192,125,62,0.2);
+	}
+
+	.footer-logo {
+		font-family: 'Cinzel', serif;
+		font-size: 1.1rem;
+		color: var(--cream);
+		letter-spacing: 0.15em;
+		margin-bottom: 0.4rem;
+	}
+
+	.footer-logo span { color: var(--canela); }
+	.footer-logo .gourmet-text { color: rgba(247,240,230,0.4); font-size: 0.7rem; letter-spacing: 0.1em; }
+
+	.footer-sub {
+		font-family: 'Lato', sans-serif;
+		font-weight: 300;
+		font-size: 0.65rem;
+		letter-spacing: 0.25em;
+		text-transform: uppercase;
+		color: rgba(247,240,230,0.35);
+		margin-bottom: 1.5rem;
+	}
+
+	.footer-links {
+		display: flex;
+		justify-content: center;
+		gap: 2rem;
+		flex-wrap: wrap;
+		margin-bottom: 1.5rem;
+	}
+
+	.footer-links a {
+		font-family: 'Lato', sans-serif;
+		font-size: 0.7rem;
+		font-weight: 300;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: rgba(247,240,230,0.4);
+		text-decoration: none;
+		transition: color 0.2s;
+	}
+
+	.footer-links a:hover { color: var(--canela); }
+
+	.footer-copy {
+		font-size: 0.68rem;
+		font-weight: 300;
+		color: rgba(247,240,230,0.2);
+		letter-spacing: 0.08em;
+	}
+</style>
